@@ -1,0 +1,15 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description : Sample stack to create EC2 Instance
+
+Resources:
+  DemoInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+       ImageId: ami-074dc0a6f6c764218
+       InstanceType: t2.micro
+       KeyName: MumbaiKey
+       Tags:
+         - Key: Name
+           Value: DevInstance
+         - Key: Environment
+           Value: Dev

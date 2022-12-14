@@ -1,0 +1,116 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: This template creates a Nat_Gateway in each public sbubnets
+
+Parameters: 
+ PublicSubnet1:
+  Type: String
+  
+ PublicSubnet2:
+  Type: String
+
+ PrivateSubnet1:
+  Type: String
+
+ PrivateSubnet2:
+  Type: String
+
+ PrivateSubnet3:
+  Type: String
+
+ PrivateSubnet4:
+  Type: String
+
+ VpcId:
+  Type: String
+
+
+Resources:
+ NateGateway1EIP:
+  Type: AWS::EC2::EIP
+  Properties:
+   Domain: vpc
+   Tags:
+    - Key: Name
+      Value: EIP1
+
+ NateGateway2EIP:
+  Type: AWS::EC2::EIP
+  Properties:
+   Domain: vpc
+   Tags:
+    - Key: Name
+      Value: EIP2
+
+ NateGateway1:
+  Type: AWS::EC2::NatGateway
+  DependsOn: NateGateway1EIP
+  Properties:
+   AllocationId: !GetAtt NateGateway1EIP.AllocationId
+   SubnetId: !Ref PublicSubnet1
+   Tags:
+    - Key: Name
+      Value: Nat Gateway Public Subnet 1
+
+ NateGateway2:
+  Type: AWS::EC2::NatGateway
+  DependsOn: NateGateway2EIP
+  Properties:
+   AllocationId: !GetAtt NateGateway2EIP.AllocationId
+   SubnetId: !Ref PublicSubnet2
+   Tags:
+    - Key: Name
+      Value: Nat Gateway Public Subnet 2
+
+ PrivateRouteTable1:
+  Type: AWS::EC2::RouteTable
+  Properties:
+   Tags:
+    - Key: Name
+      Value: Priavte Route Table 1
+   VpcId: !Ref VpcId
+
+ PrivateRoute1:
+  Type: AWS::EC2::Route
+  Properties:
+   DestinationCidrBlock: 0.0.0.0/0
+   NatGatewayId: !Ref NateGateway1
+   RouteTableId: !Ref PrivateRouteTable1
+
+ PrivateSubnet1RouteTableAssociation:
+  Type: AWS::EC2::SubnetRouteTableAssociation
+  Properties:
+   RouteTableId: !Ref PrivateRouteTable1
+   SubnetId: !Ref PrivateSubnet1
+
+ PrivateSubnet3RouteTableAssociation:
+  Type: AWS::EC2::SubnetRouteTableAssociation
+  Properties:
+   RouteTableId: !Ref PrivateRouteTable1
+   SubnetId: !Ref PrivateSubnet3
+
+ PrivateRouteTable2:
+  Type: AWS::EC2::RouteTable
+  Properties:
+   Tags:
+    - Key: Name
+      Value: Priavte Route Table 2
+   VpcId: !Ref VpcId
+
+ PrivateRoute2:
+  Type: AWS::EC2::Route
+  Properties:
+   DestinationCidrBlock: 0.0.0.0/0
+   NatGatewayId: !Ref NateGateway2
+   RouteTableId: !Ref PrivateRouteTable2
+
+ PrivateSubnet2RouteTableAssociation:
+  Type: AWS::EC2::SubnetRouteTableAssociation
+  Properties:
+   RouteTableId: !Ref PrivateRouteTable2
+   SubnetId: !Ref PrivateSubnet2
+
+ PrivateSubnet4RouteTableAssociation:
+  Type: AWS::EC2::SubnetRouteTableAssociation
+  Properties:
+   RouteTableId: !Ref PrivateRouteTable2
+   SubnetId: !Ref PrivateSubnet4

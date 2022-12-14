@@ -1,0 +1,202 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+ VpcCidrBlock:
+  Type: String
+  Default: 10.0.0.0/16
+ PublicSubnet1CidrBlock:
+  Type: String
+  Default: 10.0.0.0/24
+ PublicSubnet2CidrBlock:
+  Type: String
+  Default: 10.0.1.0/24
+ PrivateSubnet1CidrBlock:
+  Type: String
+  Default: 10.0.2.0/24
+ PrivateSubnet2CidrBlock:
+  Type: String
+  Default: 10.0.3.0/24
+ PrivateSubnet3CidrBlock:
+  Type: String
+  Default: 10.0.4.0/24
+ PrivateSubnet4CidrBlock:
+  Type: String
+  Default: 10.0.5.0/24
+ SSHLocationBlock:
+  AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
+  ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+  Default: 0.0.0.0/0
+  Description: The IP address range that can be used to access the web server using SSH.
+  MaxLength: '18'
+  MinLength: '9'
+  Type: String
+
+
+ InstanceTypeBlock:
+  Description: Webserver EC2 instance type
+  Type: String
+  Default: t2.micro
+  AllowedValues:
+   - t1.micro
+   - t2.nano
+   - t2.micro
+  ConstraintDescription: Must be a valid Ec2 instance type.
+ KeyNameBlock:
+  Description: Name of an existing EC2keypair to enable SSH
+  Type: AWS::EC2::KeyPair::KeyName
+  ConstraintDescription: must be the name of an existing EC2 KeyPair.
+ ImageIDBlock: 
+  Description: The ID of the Amazon machine image (AMI)
+  Type: String
+  Default: ami-074dc0a6f6c764218
+
+
+ DatabaseInstanceIdentifierBlock:
+  AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+  ConstraintDescription: Must begain with letter and contain only alphanumeric charecters
+  Default: MySQL
+  Description: Instance identifier name
+  MaxLength: 60
+  MinLength: 1
+  Type: String
+ DatabaseNameBlock: 
+  AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+  ConstraintDescription: Must begain with letter and contain only alphanumeric charecters
+  Default: applicationdb
+  Description: MySQL database name
+  MaxLength: 64
+  MinLength: 1
+  Type: String
+
+ DatabaseUserBlock: 
+  AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+  ConstraintDescription: Must begain with letter and contain only alphanumeric charecters
+  Default: dbadmain
+  Description: Username for MySQL database access
+  MaxLength: 16
+  MinLength: 1
+  NoEcho: true
+  Type: String
+
+ DatabasePasswordBlock:
+  AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+  ConstraintDescription: Must begain with letter and contain only alphanumeric charecters
+  Default: Test1234
+  Description: Password for MySQL database access
+  MaxLength: 41
+  MinLength: 8
+  NoEcho: true
+  Type: String
+
+ DatabaseBackupRetentionPeriodBlock:
+  ConstraintDescription: Database backup retention period must be between 0 and 35 days
+  Default: 0
+  Description: The number of days for which automatic DB snapshorts are retained
+  MaxLength: 35
+  MinLength: 0
+  Type: String
+
+ DatabaseAllocatedStorageBlock:
+  ConstraintDescription: Must be between 5 and 1024Gb
+  Default: 20
+  Description: The size of the database (Gb)
+  MaxValue: 1024
+  MinValue: 5
+  Type: Number
+
+ DatabaseInstanceClassBlock:
+  AllowedValues:
+   - db.t1.micro
+   - db.t2.micro
+   - db.m1.small
+   - db.m1.medium
+   - db.m1.large
+  ConstraintDescription: must select a valid database instance type
+  Default: db.t2.micro
+  Description: The database instance type
+  Type: String
+
+ MultiAZDatabaseBlock:
+  AllowedValues:
+   - true
+   - false
+  ConstraintDescription: Must be either true or false
+  Default: false
+  Description: Creates a multi-AZ MYSQL Amazon RDS database instance
+  Type: String
+
+ 
+
+Resources:
+ VPCStack:
+  Type: AWS::CloudFormation::Stack
+  Properties:
+   TemplateURL: https://cloudformationnestedstacks13-12-2022.s3.ap-south-1.amazonaws.com/VPC.yaml
+   Parameters:
+    VpcCidr: !Ref VpcCidrBlock
+    PublicSubnet1Cidr: !Ref PublicSubnet1CidrBlock
+    PublicSubnet2Cidr: !Ref PublicSubnet2CidrBlock
+    PrivateSubnet1Cidr: !Ref PrivateSubnet1CidrBlock
+    PrivateSubnet2Cidr: !Ref PrivateSubnet2CidrBlock
+    PrivateSubnet3Cidr: !Ref PrivateSubnet3CidrBlock
+    PrivateSubnet4Cidr: !Ref PrivateSubnet4CidrBlock
+    SSHLocation: !Ref SSHLocationBlock
+
+ NatGatewayStack:
+  Type: AWS::CloudFormation::Stack
+  DependsOn: VPCStack
+  Properties:
+   TemplateURL: https://cloudformationnestedstacks13-12-2022.s3.ap-south-1.amazonaws.com/NatGateWay.yaml
+   Parameters:
+    VpcId: !GetAtt VPCStack.Outputs.VPC
+    PublicSubnet1: !GetAtt VPCStack.Outputs.PublicSubnet1
+    PublicSubnet2: !GetAtt VPCStack.Outputs.PublicSubnet2
+    PrivateSubnet1: !GetAtt VPCStack.Outputs.PrivateSubnet1
+    PrivateSubnet2: !GetAtt VPCStack.Outputs.PrivateSubnet2
+    PrivateSubnet3: !GetAtt VPCStack.Outputs.PrivateSubnet3
+    PrivateSubnet4: !GetAtt VPCStack.Outputs.PrivateSubnet4
+
+
+ RDSStack:
+  Type: AWS::CloudFormation::Stack
+  DependsOn: NatGatewayStack
+  Properties:
+   TemplateURL: https://cloudformationnestedstacks13-12-2022.s3.ap-south-1.amazonaws.com/RDS.yaml
+   Parameters:
+    DatabaseInstanceIdentifier: !Ref DatabaseInstanceIdentifierBlock
+    DatabaseName: !Ref DatabaseNameBlock
+    DatabaseUser: !Ref DatabaseUserBlock
+    DatabasePassword: !Ref DatabasePasswordBlock
+    DatabaseBackupRetentionPeriod: !Ref DatabaseBackupRetentionPeriodBlock
+    DatabaseAllocatedStorage: !Ref DatabaseAllocatedStorageBlock
+    DatabaseInstanceClass: !Ref DatabaseInstanceClassBlock
+    MultiAZDatabase: !Ref MultiAZDatabaseBlock
+    SubnetId1: !GetAtt VPCStack.Outputs.PrivateSubnet3
+    SubnetId2: !GetAtt VPCStack.Outputs.PrivateSubnet4
+    VPCSecurityGroups: !GetAtt VPCStack.Outputs.DataBaseSecurityGroup
+ 
+ WebServerStack:
+  Type: AWS::CloudFormation::Stack
+  Properties:
+   TemplateURL: https://cloudformationnestedstacks13-12-2022.s3.ap-south-1.amazonaws.com/WebServer.yaml
+   Parameters:
+    SubnetId1: !GetAtt VPCStack.Outputs.PrivateSubnet1
+    SubnetId2: !GetAtt VPCStack.Outputs.PrivateSubnet2
+    SecurityGroupIds: !GetAtt VPCStack.Outputs.WebServerSecurityGroup
+    InstanceType: !Ref InstanceTypeBlock
+    ImageID: !Ref ImageIDBlock
+    KeyName: !Ref KeyNameBlock
+     
+
+ ALBStack: 
+  Type: AWS::CloudFormation::Stack
+  DependsOn: WebServerStack
+  Properties:
+   TemplateURL: https://cloudformationnestedstacks13-12-2022.s3.ap-south-1.amazonaws.com/ALB.yaml
+   Parameters:
+    SecurityGroups: !GetAtt VPCStack.Outputs.ALBSecurityGroup
+    VpcId: !GetAtt VPCStack.Outputs.VPC
+    EC2Instance1: !GetAtt WebServerStack.Outputs.EC2Instance1
+    EC2Instance2: !GetAtt WebServerStack.Outputs.EC2Instance2
+    PublicSubnet1: !GetAtt VPCStack.Outputs.PublicSubnet1
+    PublicSubnet2: !GetAtt VPCStack.Outputs.PublicSubnet2

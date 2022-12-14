@@ -1,0 +1,72 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description : To create EC2 WebServer 
+
+Parameters:
+  InstanceType:
+    Description: WebServer EC2 instance type
+    Type: String
+    # Default: t2.micro
+    # AllowedValues:
+    #   - t1.micro
+    #   - t2.nano
+    #   - t2.micro
+    # ConstraintDescription: must be a valid EC2 instance type.
+
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+
+  ImageID:
+    Description: The ID of the Amazon machine image (AMI)
+    Type: String
+
+  SecurityGroupIds:
+    Description: The Name of the vpc stack that exports values
+    Type: String
+
+  SubnetId1:
+    Type: String
+
+  SubnetId2:
+    Type: String
+  
+
+Resources:
+  EC2Instance1:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      SubnetId: !Ref SubnetId1
+      SecurityGroupIds: [ !Ref SecurityGroupIds ]
+      KeyName: !Ref KeyName
+      ImageId: !Ref ImageID 
+      Tags:
+        - Key: Name
+          Value: EC2 | Private Subnet 1
+
+  EC2Instance2:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      SubnetId:  !Ref SubnetId2
+      SecurityGroupIds: [ !Ref SecurityGroupIds ]
+      KeyName: !Ref KeyName
+      ImageId: !Ref ImageID 
+      Tags:
+        - Key: Name
+          Value: EC2 | Private Subnet 2
+
+
+Outputs:
+ EC2Instance1:
+  Description: EC2 Instance 1
+  Export:
+   Name: !Sub ${AWS::StackName}-EC2Instance1
+  Value: !Ref EC2Instance1
+
+ EC2Instance2:
+  Description: EC2 Instance 2
+  Export:
+   Name: !Sub ${AWS::StackName}-EC2Instance2
+  Value: !Ref EC2Instance2
